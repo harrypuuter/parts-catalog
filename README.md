@@ -49,7 +49,7 @@ A modern Flask web application for managing parts inventory with **multi-locatio
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/parts-catalog.git
+git clone https://github.com/harrypuuter/parts-catalog.git
 cd parts-catalog
 
 # Install dependencies with uv
