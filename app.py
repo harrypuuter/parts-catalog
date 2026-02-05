@@ -267,70 +267,61 @@ def print_list():
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # Use built-in font with Latin-1 encoding for German characters
-    pdf.add_page()
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, 'Teileliste', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.set_font('Helvetica', '', 10)
-    pdf.cell(0, 6, f'Stand: {datetime.now().strftime("%d.%m.%Y %H:%M")}', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.ln(5)
-
-    # Table settings
-    col_widths = [50, 80, 20, 20]  # Code, Description, Section, Qty
+    # Table settings - 4 columns filling page width (190mm usable)
+    col_widths = [55, 100, 20, 15]  # Code, Description, Section, Qty
     row_height = 7
 
     for shelf_name in sorted(shelves.keys()):
         shelf_items = shelves[shelf_name]
 
-        # Check if we need a new page (header + at least a few rows)
-        if pdf.get_y() > 250:
-            pdf.add_page()
+        # New page for each shelf
+        pdf.add_page()
 
-        # Shelf header
-        pdf.set_font('Helvetica', 'B', 12)
-        pdf.set_fill_color(44, 62, 80)
-        pdf.set_text_color(255, 255, 255)
-        pdf.cell(0, 8, f'  Regal {shelf_name}', fill=True, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_text_color(0, 0, 0)
+        # Shelf header with title and date
+        pdf.set_font('Helvetica', 'B', 18)
+        pdf.cell(0, 12, f'Regal {shelf_name}', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.cell(0, 6, f'Stand: {datetime.now().strftime("%d.%m.%Y %H:%M")}', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.ln(5)
 
         # Table header
         pdf.set_font('Helvetica', 'B', 9)
-        pdf.set_fill_color(236, 240, 241)
+        pdf.set_fill_color(44, 62, 80)
+        pdf.set_text_color(255, 255, 255)
         pdf.cell(col_widths[0], row_height, 'Teilenummer', border=1, fill=True)
         pdf.cell(col_widths[1], row_height, 'Beschreibung', border=1, fill=True)
         pdf.cell(col_widths[2], row_height, 'Fach', border=1, align='C', fill=True)
         pdf.cell(col_widths[3], row_height, 'Menge', border=1, align='C', fill=True, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_text_color(0, 0, 0)
 
         # Table rows
         pdf.set_font('Helvetica', '', 9)
         for item in shelf_items:
-            # Check for page break
+            # Check for page break within same shelf
             if pdf.get_y() > 270:
                 pdf.add_page()
                 # Repeat shelf and table header on new page
-                pdf.set_font('Helvetica', 'B', 12)
+                pdf.set_font('Helvetica', 'B', 14)
+                pdf.cell(0, 10, f'Regal {shelf_name} (Fortsetzung)', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.ln(3)
+                pdf.set_font('Helvetica', 'B', 9)
                 pdf.set_fill_color(44, 62, 80)
                 pdf.set_text_color(255, 255, 255)
-                pdf.cell(0, 8, f'  Regal {shelf_name} (Fortsetzung)', fill=True, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                pdf.set_text_color(0, 0, 0)
-                pdf.set_font('Helvetica', 'B', 9)
-                pdf.set_fill_color(236, 240, 241)
                 pdf.cell(col_widths[0], row_height, 'Teilenummer', border=1, fill=True)
                 pdf.cell(col_widths[1], row_height, 'Beschreibung', border=1, fill=True)
                 pdf.cell(col_widths[2], row_height, 'Fach', border=1, align='C', fill=True)
                 pdf.cell(col_widths[3], row_height, 'Menge', border=1, align='C', fill=True, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.set_text_color(0, 0, 0)
                 pdf.set_font('Helvetica', '', 9)
 
-            # Truncate long text and handle encoding
-            code = str(item['code'])[:25]
-            desc = str(item['description'] or '-')[:40]
+            # Truncate long text
+            code = str(item['code'])[:28]
+            desc = str(item['description'] or '-')[:50]
 
             pdf.cell(col_widths[0], row_height, code, border=1)
             pdf.cell(col_widths[1], row_height, desc, border=1)
             pdf.cell(col_widths[2], row_height, str(item['section']), border=1, align='C')
             pdf.cell(col_widths[3], row_height, str(item['quantity']), border=1, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-        pdf.ln(3)
 
     # Output PDF
     pdf_buffer = io.BytesIO()
