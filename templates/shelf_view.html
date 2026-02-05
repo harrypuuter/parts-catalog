@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Shelf {{ shelf }} - Parts Catalog{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Shelves</a></li>
+        <li class="breadcrumb-item active">Shelf {{ shelf }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Shelf {{ shelf }}</h1>
+    <a href="{{ url_for('add_item') }}" class="btn btn-primary">Add Item</a>
+</div>
+
+{% if items %}
+    <p class="text-muted mb-3">{{ items|length }} item{% if items|length != 1 %}s{% endif %} on this shelf</p>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for item in items %}
+            <div class="col">
+                <a href="{{ url_for('item_detail', item_id=item.id) }}" class="text-decoration-none">
+                    <div class="card h-100 item-card">
+                        {% if item.photo_filename %}
+                            <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
+                                 class="card-img-top" alt="{{ item.code }}"
+                                 style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                 style="height: 200px;">
+                                <span class="text-muted">No photo</span>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.code }}</h5>
+                            <p class="card-text text-muted small">{{ item.description or 'No description' }}</p>
+                            {% if item.section %}
+                                <span class="badge bg-secondary">Section {{ item.section }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <h3 class="text-muted">No items on this shelf</h3>
+        <p class="text-muted"><a href="{{ url_for('add_item') }}">Add an item</a> to this shelf.</p>
+    </div>
+{% endif %}
+{% endblock %}

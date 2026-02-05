@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_mode %}Edit{% else %}Add{% endif %} Item - Parts Catalog{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h1 class="mb-4">{% if edit_mode %}Edit Item{% else %}Add New Item{% endif %}</h1>
+
+        <form method="post" enctype="multipart/form-data">
+            <!-- Step 1: Photo -->
+            <div class="mb-3">
+                <label for="photo" class="form-label">
+                    <span class="badge bg-primary me-2">1</span>Photo
+                </label>
+                {% if edit_mode and item.photo_filename %}
+                    <div class="mb-2">
+                        <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
+                             alt="Current photo" class="img-thumbnail" style="max-height: 150px;">
+                        <p class="text-muted small">Current photo - upload new to replace</p>
+                    </div>
+                {% endif %}
+                <input type="file" class="form-control" id="photo" name="photo"
+                       accept="image/*" capture="environment">
+                <div class="form-text">Take a photo of the sticker to auto-extract text</div>
+            </div>
+
+            <!-- Image preview -->
+            <div id="preview-container" class="mb-3" style="display: none;">
+                <img id="photo-preview" class="img-fluid rounded" style="max-height: 250px;">
+            </div>
+
+            <!-- OCR Status -->
+            <div id="ocr-loading" class="mb-3 text-center" style="display: none;">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2">Reading text from image...</p>
+            </div>
+
+            <!-- OCR Results -->
+            <div id="ocr-results" class="mb-4" style="display: none;">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <span class="badge bg-light text-success me-2">2</span>
+                        Select from detected text
+                    </div>
+                    <div class="card-body">
+                        <!-- Detected Codes -->
+                        <div id="codes-section" class="mb-3" style="display: none;">
+                            <label class="form-label fw-bold">Part Codes</label>
+                            <div id="codes-list" class="d-flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Detected Descriptions -->
+                        <div id="descriptions-section" style="display: none;">
+                            <label class="form-label fw-bold">Descriptions</label>
+                            <div id="descriptions-list" class="d-flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- No results message -->
+                        <div id="no-results" class="text-muted" style="display: none;">
+                            No text detected. Please enter details manually.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ocr-error" class="alert alert-warning mb-3" style="display: none;"></div>
+
+            <!-- Step 3: Form Fields -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="badge bg-primary me-2">3</span>
+                    Confirm Details
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Part Code *</label>
+                        <input type="text" class="form-control form-control-lg" id="code" name="code"
+                               value="{{ item.code if item else '' }}" required
+                               placeholder="e.g., P-1234">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"
+                                  placeholder="Short description of the part">{{ item.description if item else '' }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="shelf" class="form-label">Shelf *</label>
+                            <input type="text" class="form-control" id="shelf" name="shelf"
+                                   value="{{ item.shelf if item else '' }}" required
+                                   placeholder="e.g., A, B, 1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="section" class="form-label">Section</label>
+                            <input type="number" class="form-control" id="section" name="section"
+                                   value="{{ item.section if item and item.section else '' }}"
+                                   placeholder="e.g., 1, 2, 3" min="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    {% if edit_mode %}Update{% else %}Add{% endif %} Item
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('photo');
+    const previewContainer = document.getElementById('preview-container');
+    const photoPreview = document.getElementById('photo-preview');
+    const ocrLoading = document.getElementById('ocr-loading');
+    const ocrResults = document.getElementById('ocr-results');
+    const ocrError = document.getElementById('ocr-error');
+    const codesSection = document.getElementById('codes-section');
+    const codesList = document.getElementById('codes-list');
+    const descriptionsSection = document.getElementById('descriptions-section');
+    const descriptionsList = document.getElementById('descriptions-list');
+    const noResults = document.getElementById('no-results');
+    const codeInput = document.getElementById('code');
+    const descriptionInput = document.getElementById('description');
+
+    function createTextButton(item, type) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-secondary ocr-btn';
+        btn.dataset.type = type;
+        btn.dataset.text = item.text;
+
+        const confidenceBadge = item.confidence >= 80 ? 'bg-success' :
+                               item.confidence >= 50 ? 'bg-warning' : 'bg-secondary';
+
+        btn.innerHTML = `
+            <span class="text-truncate" style="max-width: 200px; display: inline-block; vertical-align: middle;">
+                ${item.text}
+            </span>
+            <span class="badge ${confidenceBadge} ms-1">${item.confidence}%</span>
+        `;
+
+        btn.addEventListener('click', function() {
+            // Update the appropriate input field
+            if (type === 'code') {
+                codeInput.value = item.text;
+                // Highlight this button, unhighlight others in same group
+                codesList.querySelectorAll('.ocr-btn').forEach(b => {
+                    b.classList.remove('btn-success');
+                    b.classList.add('btn-outline-secondary');
+                });
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                // Flash the input field
+                codeInput.classList.add('border-success');
+                setTimeout(() => codeInput.classList.remove('border-success'), 1000);
+            } else {
+                descriptionInput.value = item.text;
+                descriptionsList.querySelectorAll('.ocr-btn').forEach(b => {
+                    b.classList.remove('btn-success');
+                    b.classList.add('btn-outline-secondary');
+                });
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                descriptionInput.classList.add('border-success');
+                setTimeout(() => descriptionInput.classList.remove('border-success'), 1000);
+            }
+        });
+
+        return btn;
+    }
+
+    photoInput.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            photoPreview.src = e.target.result;
+            previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        // Reset OCR UI
+        ocrResults.style.display = 'none';
+        ocrError.style.display = 'none';
+        codesSection.style.display = 'none';
+        descriptionsSection.style.display = 'none';
+        noResults.style.display = 'none';
+        codesList.innerHTML = '';
+        descriptionsList.innerHTML = '';
+
+        // Show loading
+        ocrLoading.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch('/api/ocr', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            ocrLoading.style.display = 'none';
+            ocrResults.style.display = 'block';
+
+            if (data.error) {
+                ocrError.textContent = data.error;
+                ocrError.style.display = 'block';
+                return;
+            }
+
+            const hasCodes = data.codes && data.codes.length > 0;
+            const hasDescriptions = data.descriptions && data.descriptions.length > 0;
+
+            if (!hasCodes && !hasDescriptions) {
+                noResults.style.display = 'block';
+                return;
+            }
+
+            // Display codes
+            if (hasCodes) {
+                codesSection.style.display = 'block';
+                data.codes.forEach((item, index) => {
+                    const btn = createTextButton(item, 'code');
+                    codesList.appendChild(btn);
+
+                    // Auto-select first code (best match)
+                    if (index === 0 && !codeInput.value) {
+                        btn.click();
+                    }
+                });
+            }
+
+            // Display descriptions
+            if (hasDescriptions) {
+                descriptionsSection.style.display = 'block';
+                data.descriptions.forEach((item, index) => {
+                    const btn = createTextButton(item, 'description');
+                    descriptionsList.appendChild(btn);
+
+                    // Auto-select first description if field is empty
+                    if (index === 0 && !descriptionInput.value) {
+                        btn.click();
+                    }
+                });
+            }
+
+        } catch (err) {
+            ocrLoading.style.display = 'none';
+            ocrError.textContent = 'Failed to process image. Please enter details manually.';
+            ocrError.style.display = 'block';
+            console.error('OCR error:', err);
+        }
+    });
+});
+</script>
+<style>
+    .ocr-btn {
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ocr-btn.btn-success {
+        font-weight: bold;
+    }
+    #code.border-success,
+    #description.border-success {
+        border-width: 2px;
+        transition: border-color 0.3s ease;
+    }
+</style>
+{% endblock %}

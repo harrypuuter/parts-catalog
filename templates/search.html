@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Parts Catalog{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Search Parts</h1>
+
+<form method="get" class="mb-4">
+    <div class="input-group input-group-lg">
+        <input type="search" class="form-control" name="q" placeholder="Search by code or description..."
+               value="{{ query }}" autofocus>
+        <button class="btn btn-primary" type="submit">Search</button>
+    </div>
+</form>
+
+{% if query %}
+    {% if items %}
+        <p class="text-muted mb-3">Found {{ items|length }} result{% if items|length != 1 %}s{% endif %} for "{{ query }}"</p>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for item in items %}
+                <div class="col">
+                    <a href="{{ url_for('item_detail', item_id=item.id) }}" class="text-decoration-none">
+                        <div class="card h-100 item-card">
+                            {% if item.photo_filename %}
+                                <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
+                                     class="card-img-top" alt="{{ item.code }}"
+                                     style="height: 200px; object-fit: cover;">
+                            {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                     style="height: 200px;">
+                                    <span class="text-muted">No photo</span>
+                                </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item.code }}</h5>
+                                <p class="card-text text-muted small">{{ item.description or 'No description' }}</p>
+                                <p class="card-text">
+                                    <span class="badge bg-secondary">Shelf {{ item.shelf }}</span>
+                                    {% if item.section %}
+                                        <span class="badge bg-outline-secondary">Section {{ item.section }}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <h3 class="text-muted">No results found</h3>
+            <p class="text-muted">Try a different search term or <a href="{{ url_for('add_item') }}">add a new item</a>.</p>
+        </div>
+    {% endif %}
+{% else %}
+    <p class="text-muted">Enter a search term to find parts by code or description.</p>
+{% endif %}
+{% endblock %}

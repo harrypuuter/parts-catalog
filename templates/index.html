@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Shelves - Parts Catalog{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Shelf Overview</h1>
+    <a href="{{ url_for('add_item') }}" class="btn btn-primary">Add New Item</a>
+</div>
+
+{% if shelves %}
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for shelf in shelves %}
+            <div class="col">
+                <a href="{{ url_for('shelf_view', name=shelf.shelf) }}" class="text-decoration-none">
+                    <div class="card h-100 shelf-card">
+                        <div class="card-body text-center">
+                            <h2 class="card-title display-4">{{ shelf.shelf }}</h2>
+                            <p class="card-text text-muted">
+                                {{ shelf.item_count }} item{% if shelf.item_count != 1 %}s{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <h3 class="text-muted">No items yet</h3>
+        <p class="text-muted">Start by adding your first part to the catalog.</p>
+        <a href="{{ url_for('add_item') }}" class="btn btn-primary btn-lg">Add First Item</a>
+    </div>
+{% endif %}
+{% endblock %}
