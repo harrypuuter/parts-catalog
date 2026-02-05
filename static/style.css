@@ -400,3 +400,106 @@ html {
     background-color: var(--accent);
     color: white;
 }
+
+/* ============ Multi-Location Inventory Styles ============ */
+
+/* Quantity badges */
+.quantity-badge {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.quantity-badge-lg {
+    font-size: 1.25rem;
+    padding: 0.5em 1em;
+}
+
+/* Locations table */
+.locations-table {
+    margin-bottom: 0;
+}
+
+.locations-table th {
+    background-color: var(--bg-light);
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+}
+
+.locations-table td {
+    vertical-align: middle;
+}
+
+.locations-table tfoot td {
+    border-top: 2px solid var(--border);
+}
+
+/* History table */
+.history-table {
+    font-size: 0.9rem;
+}
+
+.history-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Modal improvements */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-light);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border);
+    background-color: var(--bg-light);
+    border-radius: 0 0 12px 12px;
+}
+
+/* Warning card for duplicate detection */
+.card.border-warning {
+    border-width: 2px !important;
+}
+
+.card.border-warning .card-header.bg-warning {
+    border-bottom: 1px solid #f0ad4e;
+}
+
+/* Use button */
+.use-btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.75rem;
+}
+
+.use-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Collapsible card header */
+.card-header[data-bs-toggle="collapse"] {
+    transition: background-color 0.2s ease;
+}
+
+.card-header[data-bs-toggle="collapse"]:hover {
+    background-color: var(--border);
+}
+
+/* Alert for warning messages */
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: none;
+}

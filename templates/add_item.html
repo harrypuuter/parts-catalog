@@ -1,25 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}{% if edit_mode %}Bearbeiten{% else %}Hinzufügen{% endif %} - Teilekatalog{% endblock %}
+{% block title %}Hinzufügen - Teilekatalog{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-        <h1 class="mb-4">{% if edit_mode %}Teil bearbeiten{% else %}Neues Teil hinzufügen{% endif %}</h1>
+        <h1 class="mb-4">Neues Teil hinzufügen</h1>
 
-        <form method="post" enctype="multipart/form-data">
+        <!-- Existing Item Banner (shown when duplicate detected) -->
+        {% if existing_item %}
+        <div class="card border-warning mb-4" id="existing-item-banner">
+            <div class="card-header bg-warning text-dark">
+                <strong>Teil existiert bereits!</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if existing_item.photo_filename %}
+                    <div class="col-4">
+                        <img src="{{ url_for('uploaded_file', filename=existing_item.photo_filename) }}"
+                             alt="{{ existing_item.code }}" class="img-fluid rounded">
+                    </div>
+                    {% endif %}
+                    <div class="{{ 'col-8' if existing_item.photo_filename else 'col-12' }}">
+                        <h5>{{ existing_item.code }}</h5>
+                        <p class="text-muted mb-2">{{ existing_item.description or 'Keine Beschreibung' }}</p>
+                        <p class="mb-1"><strong>Lagerorte:</strong></p>
+                        <ul class="mb-2">
+                            {% for loc in existing_item.locations %}
+                            <li>Regal {{ loc.shelf }}, Fach {{ loc.section }}: {{ loc.quantity }}x</li>
+                            {% endfor %}
+                        </ul>
+                        <p><strong>Gesamt:</strong> {{ existing_item.total_quantity }}x</p>
+                    </div>
+                </div>
+                <hr>
+                <p class="mb-2">Lagerort hinzufügen zu diesem Teil?</p>
+                <form method="post" class="d-inline">
+                    <input type="hidden" name="existing_item_id" value="{{ existing_item.id }}">
+                    <input type="hidden" name="code" value="{{ code }}">
+                    <input type="hidden" name="shelf" value="{{ shelf }}">
+                    <input type="hidden" name="section" value="{{ section }}">
+                    <input type="hidden" name="quantity" value="{{ quantity }}">
+                    <button type="submit" class="btn btn-primary">
+                        Ja, Lagerort hinzufügen (Regal {{ shelf }}, Fach {{ section }}, {{ quantity }}x)
+                    </button>
+                </form>
+                <a href="{{ url_for('item_detail', item_id=existing_item.id) }}" class="btn btn-secondary">
+                    Teil anzeigen
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AJAX Duplicate Preview (hidden by default) -->
+        <div class="card border-warning mb-4" id="ajax-duplicate-banner" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <strong>Teil existiert bereits!</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4" id="ajax-preview-photo"></div>
+                    <div id="ajax-preview-details"></div>
+                </div>
+                <hr>
+                <p class="mb-2">Du kannst einen neuen Lagerort zu diesem Teil hinzufügen.</p>
+                <input type="hidden" id="ajax-existing-item-id" value="">
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="add-form">
+            <!-- Hidden field for existing item ID (set by JS if adding to existing) -->
+            <input type="hidden" name="existing_item_id" id="form-existing-item-id" value="">
+
             <!-- Step 1: Photo -->
             <div class="mb-3">
                 <label for="photo" class="form-label">
                     <span class="badge bg-primary me-2">1</span>Foto
                 </label>
-                {% if edit_mode and item.photo_filename %}
-                    <div class="mb-2">
-                        <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
-                             alt="Aktuelles Foto" class="img-thumbnail" style="max-height: 150px;">
-                        <p class="text-muted small">Aktuelles Foto - neu hochladen zum Ersetzen</p>
-                    </div>
-                {% endif %}
                 <input type="file" class="form-control" id="photo" name="photo"
                        accept="image/*" capture="environment">
                 <div class="form-text">Foto vom Aufkleber machen um Text automatisch zu erkennen</div>
@@ -76,36 +133,46 @@
                     <div class="mb-3">
                         <label for="code" class="form-label">Teilenummer *</label>
                         <input type="text" class="form-control form-control-lg" id="code" name="code"
-                               value="{{ item.code if item else '' }}" required
+                               value="{{ code or '' }}" required
                                placeholder="z.B. P-1234">
+                        <div id="code-check-status" class="form-text"></div>
                     </div>
 
                     <div class="mb-3">
                         <label for="description" class="form-label">Beschreibung</label>
                         <textarea class="form-control" id="description" name="description" rows="2"
-                                  placeholder="Kurze Beschreibung des Teils">{{ item.description if item else '' }}</textarea>
+                                  placeholder="Kurze Beschreibung des Teils">{{ description or '' }}</textarea>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="shelf" class="form-label">Regal *</label>
                             <input type="text" class="form-control" id="shelf" name="shelf"
-                                   value="{{ item.shelf if item else '' }}" required
+                                   value="{{ shelf or '' }}" required
                                    placeholder="z.B. A, B, 1">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="section" class="form-label">Fach</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="section" class="form-label">Fach *</label>
                             <input type="number" class="form-control" id="section" name="section"
-                                   value="{{ item.section if item and item.section else '' }}"
+                                   value="{{ section or '' }}" required
                                    placeholder="z.B. 1, 2, 3" min="1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="quantity" class="form-label">Menge</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity"
+                                   value="{{ quantity or 1 }}"
+                                   placeholder="1" min="1">
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    {% if edit_mode %}Aktualisieren{% else %}Hinzufügen{% endif %}
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-new">
+                    Neues Teil anlegen
+                </button>
+                <button type="submit" class="btn btn-success btn-lg" id="submit-existing" style="display: none;">
+                    Zu bestehendem Teil hinzufügen
                 </button>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">Abbrechen</a>
             </div>
@@ -130,6 +197,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const noResults = document.getElementById('no-results');
     const codeInput = document.getElementById('code');
     const descriptionInput = document.getElementById('description');
+    const duplicateBanner = document.getElementById('ajax-duplicate-banner');
+    const previewPhoto = document.getElementById('ajax-preview-photo');
+    const previewDetails = document.getElementById('ajax-preview-details');
+    const existingItemIdInput = document.getElementById('form-existing-item-id');
+    const submitNew = document.getElementById('submit-new');
+    const submitExisting = document.getElementById('submit-existing');
+    const codeCheckStatus = document.getElementById('code-check-status');
+
+    let checkCodeTimeout = null;
 
     function createTextButton(item, type) {
         const btn = document.createElement('button');
@@ -149,19 +225,18 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         btn.addEventListener('click', function() {
-            // Update the appropriate input field
             if (type === 'code') {
                 codeInput.value = item.text;
-                // Highlight this button, unhighlight others in same group
                 codesList.querySelectorAll('.ocr-btn').forEach(b => {
                     b.classList.remove('btn-success');
                     b.classList.add('btn-outline-secondary');
                 });
                 btn.classList.remove('btn-outline-secondary');
                 btn.classList.add('btn-success');
-                // Flash the input field
                 codeInput.classList.add('border-success');
                 setTimeout(() => codeInput.classList.remove('border-success'), 1000);
+                // Trigger code check
+                checkCode(item.text);
             } else {
                 descriptionInput.value = item.text;
                 descriptionsList.querySelectorAll('.ocr-btn').forEach(b => {
@@ -178,6 +253,82 @@ document.addEventListener('DOMContentLoaded', function() {
         return btn;
     }
 
+    // Check if code exists (AJAX)
+    async function checkCode(code) {
+        if (!code || code.trim().length === 0) {
+            hideDuplicateBanner();
+            return;
+        }
+
+        codeCheckStatus.innerHTML = '<span class="text-muted">Prüfe...</span>';
+
+        try {
+            const response = await fetch(`/api/check-code?code=${encodeURIComponent(code)}`);
+            const data = await response.json();
+
+            if (data.exists) {
+                showDuplicateBanner(data.item);
+            } else {
+                hideDuplicateBanner();
+                codeCheckStatus.innerHTML = '<span class="text-success">Neue Teilenummer</span>';
+            }
+        } catch (err) {
+            console.error('Code check error:', err);
+            codeCheckStatus.innerHTML = '';
+        }
+    }
+
+    function showDuplicateBanner(item) {
+        // Build preview
+        let photoHtml = '';
+        if (item.photo_filename) {
+            photoHtml = `<img src="/uploads/${item.photo_filename}" alt="${item.code}" class="img-fluid rounded">`;
+            previewPhoto.innerHTML = photoHtml;
+            previewPhoto.className = 'col-4';
+            previewDetails.className = 'col-8';
+        } else {
+            previewPhoto.innerHTML = '';
+            previewPhoto.className = '';
+            previewDetails.className = 'col-12';
+        }
+
+        let locationsHtml = item.locations.map(loc =>
+            `<li>Regal ${loc.shelf}, Fach ${loc.section}: ${loc.quantity}x</li>`
+        ).join('');
+
+        previewDetails.innerHTML = `
+            <h5>${item.code}</h5>
+            <p class="text-muted mb-2">${item.description || 'Keine Beschreibung'}</p>
+            <p class="mb-1"><strong>Lagerorte:</strong></p>
+            <ul class="mb-2">${locationsHtml}</ul>
+            <p><strong>Gesamt:</strong> ${item.total_quantity}x</p>
+        `;
+
+        existingItemIdInput.value = item.id;
+        duplicateBanner.style.display = 'block';
+        submitNew.style.display = 'none';
+        submitExisting.style.display = 'inline-block';
+        codeCheckStatus.innerHTML = '<span class="text-warning">Teil existiert bereits</span>';
+    }
+
+    function hideDuplicateBanner() {
+        duplicateBanner.style.display = 'none';
+        existingItemIdInput.value = '';
+        submitNew.style.display = 'inline-block';
+        submitExisting.style.display = 'none';
+    }
+
+    // Debounced code input check
+    codeInput.addEventListener('input', function() {
+        if (checkCodeTimeout) {
+            clearTimeout(checkCodeTimeout);
+        }
+        checkCodeTimeout = setTimeout(() => {
+            checkCode(codeInput.value);
+        }, 500);
+    });
+
+    // Photo upload and OCR
     photoInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;

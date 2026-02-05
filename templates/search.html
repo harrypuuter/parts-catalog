@@ -23,23 +23,28 @@
                     <a href="{{ url_for('item_detail', item_id=item.id) }}" class="text-decoration-none">
                         <div class="card h-100 item-card">
                             {% if item.photo_filename %}
-                                <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
-                                     class="card-img-top" alt="{{ item.code }}"
-                                     style="height: 200px; object-fit: cover;">
+                                <div class="position-relative">
+                                    <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
+                                         class="card-img-top" alt="{{ item.code }}"
+                                         style="height: 200px; object-fit: cover;">
+                                    <span class="badge bg-primary quantity-badge position-absolute top-0 end-0 m-2">
+                                        {{ item.total_quantity }}x
+                                    </span>
+                                </div>
                             {% else %}
-                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center position-relative"
                                      style="height: 200px;">
                                     <span class="text-muted">Kein Foto</span>
+                                    <span class="badge bg-primary quantity-badge position-absolute top-0 end-0 m-2">
+                                        {{ item.total_quantity }}x
+                                    </span>
                                 </div>
                             {% endif %}
                             <div class="card-body">
                                 <h5 class="card-title">{{ item.code }}</h5>
                                 <p class="card-text text-muted small">{{ item.description or 'Keine Beschreibung' }}</p>
                                 <p class="card-text">
-                                    <span class="badge bg-secondary">Regal {{ item.shelf }}</span>
-                                    {% if item.section %}
-                                        <span class="badge bg-outline-secondary">Fach {{ item.section }}</span>
-                                    {% endif %}
+                                    <span class="badge bg-secondary">{{ item.location_count }} Lagerort{% if item.location_count != 1 %}e{% endif %}</span>
                                 </p>
                             </div>
                         </div>

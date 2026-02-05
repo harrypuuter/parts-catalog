@@ -6,48 +6,237 @@
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Regale</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('shelf_view', name=item.shelf) }}">Regal {{ item.shelf }}</a></li>
+        {% if item.locations %}
+        <li class="breadcrumb-item"><a href="{{ url_for('shelf_view', name=item.locations[0].shelf) }}">Regal {{ item.locations[0].shelf }}</a></li>
+        {% endif %}
         <li class="breadcrumb-item active">{{ item.code }}</li>
     </ol>
 </nav>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-5">
         {% if item.photo_filename %}
             <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
                  alt="{{ item.code }}" class="img-fluid rounded shadow">
         {% else %}
             <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                 style="height: 400px;">
+                 style="height: 300px;">
                 <span class="text-muted h4">Kein Foto verfügbar</span>
             </div>
         {% endif %}
     </div>
-    <div class="col-md-6">
-        <h1 class="mb-3">{{ item.code }}</h1>
+    <div class="col-md-7">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h1 class="mb-0">{{ item.code }}</h1>
+            <span class="badge bg-primary quantity-badge-lg">{{ item.total_quantity }}x</span>
+        </div>
 
-        <dl class="row">
-            <dt class="col-sm-4">Beschreibung</dt>
-            <dd class="col-sm-8">{{ item.description or 'Keine Beschreibung' }}</dd>
+        <p class="text-muted mb-4">{{ item.description or 'Keine Beschreibung' }}</p>
 
-            <dt class="col-sm-4">Lagerort</dt>
-            <dd class="col-sm-8">
-                Regal <strong>{{ item.shelf }}</strong>
-                {% if item.section %}, Fach <strong>{{ item.section }}</strong>{% endif %}
-            </dd>
+        <!-- Locations Table -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Lagerorte</strong>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+                    + Lagerort hinzufügen
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 locations-table">
+                    <thead>
+                        <tr>
+                            <th>Regal</th>
+                            <th>Fach</th>
+                            <th>Menge</th>
+                            <th class="text-end">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in item.locations %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('shelf_view', name=loc.shelf) }}">{{ loc.shelf }}</a>
+                            </td>
+                            <td>{{ loc.section }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ loc.quantity }}x</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger use-btn"
+                                        data-shelf="{{ loc.shelf }}"
+                                        data-section="{{ loc.section }}"
+                                        data-quantity="{{ loc.quantity }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#useModal"
+                                        {% if loc.quantity == 0 %}disabled{% endif %}>
+                                    Entnehmen
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td colspan="2"><strong>Gesamt</strong></td>
+                            <td><strong class="badge bg-primary">{{ item.total_quantity }}x</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
 
-            <dt class="col-sm-4">Hinzugefügt</dt>
-            <dd class="col-sm-8">{{ item.created_at }}</dd>
-        </dl>
-
-        <div class="d-flex gap-2 mt-4">
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mb-4">
             <a href="{{ url_for('edit_item', item_id=item.id) }}" class="btn btn-primary">Bearbeiten</a>
             <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
                   onsubmit="return confirm('Bist du sicher, dass du dieses Teil löschen möchtest?');">
                 <button type="submit" class="btn btn-danger">Löschen</button>
             </form>
-            <a href="{{ url_for('shelf_view', name=item.shelf) }}" class="btn btn-secondary">Zurück zum Regal</a>
+        </div>
+
+        <!-- History Section (Collapsible) -->
+        <div class="card">
+            <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#historyCollapse">
+                <strong>Verlauf</strong>
+                <span class="badge bg-secondary ms-2">{{ history|length }}</span>
+                <span class="float-end">&#9662;</span>
+            </div>
+            <div id="historyCollapse" class="collapse">
+                <div class="card-body p-0">
+                    {% if history %}
+                    <table class="table table-sm mb-0 history-table">
+                        <tbody>
+                            {% for h in history %}
+                            <tr>
+                                <td class="text-muted small" style="width: 150px;">
+                                    {{ h.created_at[:16] if h.created_at else '' }}
+                                </td>
+                                <td>
+                                    {% if h.action == 'created' %}
+                                        <span class="badge bg-success">Teil erstellt</span>
+                                        Regal {{ h.shelf }}, Fach {{ h.section }} ({{ h.quantity_after }}x)
+                                    {% elif h.action == 'location_added' %}
+                                        <span class="badge bg-info">Lagerort hinzugefügt</span>
+                                        Regal {{ h.shelf }}, Fach {{ h.section }} ({{ h.quantity_after }}x)
+                                    {% elif h.action == 'quantity_changed' %}
+                                        <span class="badge bg-warning text-dark">Menge geändert</span>
+                                        Regal {{ h.shelf }}, Fach {{ h.section }}: {{ h.quantity_before }} &rarr; {{ h.quantity_after }}
+                                    {% elif h.action == 'item_used' %}
+                                        <span class="badge bg-danger">Entnommen</span>
+                                        {{ h.quantity_before - h.quantity_after }}x von Regal {{ h.shelf }}, Fach {{ h.section }}
+                                    {% else %}
+                                        {{ h.action }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted p-3 mb-0">Keine Verlaufseinträge.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Use Item Modal -->
+<div class="modal fade" id="useModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('use_item', item_id=item.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Teil entnehmen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="shelf" id="use-shelf">
+                    <input type="hidden" name="section" id="use-section">
+
+                    <p>
+                        Entnehmen von <strong>Regal <span id="use-shelf-display"></span>, Fach <span id="use-section-display"></span></strong>
+                    </p>
+                    <p class="text-muted">
+                        Verfügbar: <span id="use-available"></span>x
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="use-quantity" class="form-label">Menge entnehmen</label>
+                        <input type="number" class="form-control" id="use-quantity" name="quantity"
+                               min="1" value="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-danger">Entnehmen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Location Modal -->
+<div class="modal fade" id="addLocationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('add_location', item_id=item.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neuen Lagerort hinzufügen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="add-shelf" class="form-label">Regal *</label>
+                            <input type="text" class="form-control" id="add-shelf" name="shelf"
+                                   required placeholder="z.B. A">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="add-section" class="form-label">Fach *</label>
+                            <input type="number" class="form-control" id="add-section" name="section"
+                                   required placeholder="z.B. 1" min="1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="add-quantity" class="form-label">Menge</label>
+                            <input type="number" class="form-control" id="add-quantity" name="quantity"
+                                   value="1" min="1">
+                        </div>
+                    </div>
+                    <p class="text-muted small">
+                        Falls Regal und Fach bereits existieren, wird die Menge addiert.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Hinzufügen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle use button clicks to populate modal
+    document.querySelectorAll('.use-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const shelf = this.dataset.shelf;
+            const section = this.dataset.section;
+            const quantity = parseInt(this.dataset.quantity);
+
+            document.getElementById('use-shelf').value = shelf;
+            document.getElementById('use-section').value = section;
+            document.getElementById('use-shelf-display').textContent = shelf;
+            document.getElementById('use-section-display').textContent = section;
+            document.getElementById('use-available').textContent = quantity;
+            document.getElementById('use-quantity').max = quantity;
+            document.getElementById('use-quantity').value = 1;
+        });
+    });
+});
+</script>
 {% endblock %}

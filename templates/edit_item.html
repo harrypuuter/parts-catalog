@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Bearbeiten - {{ item.code }} - Teilekatalog{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Regale</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.code }}</a></li>
+                <li class="breadcrumb-item active">Bearbeiten</li>
+            </ol>
+        </nav>
+
+        <h1 class="mb-4">Teil bearbeiten</h1>
+
+        <form method="post" enctype="multipart/form-data">
+            <!-- Photo -->
+            <div class="mb-3">
+                <label for="photo" class="form-label">Foto</label>
+                {% if item.photo_filename %}
+                    <div class="mb-2">
+                        <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
+                             alt="Aktuelles Foto" class="img-thumbnail" style="max-height: 150px;">
+                        <p class="text-muted small">Aktuelles Foto - neu hochladen zum Ersetzen</p>
+                    </div>
+                {% endif %}
+                <input type="file" class="form-control" id="photo" name="photo"
+                       accept="image/*" capture="environment">
+            </div>
+
+            <!-- Form Fields -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    Stammdaten
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Teilenummer *</label>
+                        <input type="text" class="form-control form-control-lg" id="code" name="code"
+                               value="{{ item.code }}" required
+                               placeholder="z.B. P-1234">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Beschreibung</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"
+                                  placeholder="Kurze Beschreibung des Teils">{{ item.description or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Locations (read-only info) -->
+            {% if item.locations %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    Aktuelle Lagerorte
+                    <span class="badge bg-secondary ms-2">{{ item.locations|length }}</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Lagerorte werden auf der Detailseite verwaltet.</p>
+                    <ul class="mb-0">
+                        {% for loc in item.locations %}
+                        <li>Regal {{ loc.shelf }}, Fach {{ loc.section }}: {{ loc.quantity }}x</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">Aktualisieren</button>
+                <a href="{{ url_for('item_detail', item_id=item.id) }}" class="btn btn-secondary btn-lg">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

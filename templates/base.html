@@ -22,6 +22,15 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('add_item') }}">Teil hinzufügen</a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            PDF Export
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('print_list') }}">Nach Regal sortiert</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('print_inventory') }}">Inventarliste (A-Z)</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 <form class="d-flex" action="{{ url_for('search') }}" method="get">
                     <input class="form-control me-2" type="search" name="q" placeholder="Teile suchen..." value="{{ request.args.get('q', '') }}">
