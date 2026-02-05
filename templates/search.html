@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Search - Parts Catalog{% endblock %}
+{% block title %}Suche - Teilekatalog{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Search Parts</h1>
+<h1 class="mb-4">Teile suchen</h1>
 
 <form method="get" class="mb-4">
     <div class="input-group input-group-lg">
-        <input type="search" class="form-control" name="q" placeholder="Search by code or description..."
+        <input type="search" class="form-control" name="q" placeholder="Nach Nummer oder Beschreibung suchen..."
                value="{{ query }}" autofocus>
-        <button class="btn btn-primary" type="submit">Search</button>
+        <button class="btn btn-primary" type="submit">Suchen</button>
     </div>
 </form>
 
 {% if query %}
     {% if items %}
-        <p class="text-muted mb-3">Found {{ items|length }} result{% if items|length != 1 %}s{% endif %} for "{{ query }}"</p>
+        <p class="text-muted mb-3">{{ items|length }} Ergebnis{% if items|length != 1 %}se{% endif %} für "{{ query }}"</p>
 
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for item in items %}
@@ -29,16 +29,16 @@
                             {% else %}
                                 <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                                      style="height: 200px;">
-                                    <span class="text-muted">No photo</span>
+                                    <span class="text-muted">Kein Foto</span>
                                 </div>
                             {% endif %}
                             <div class="card-body">
                                 <h5 class="card-title">{{ item.code }}</h5>
-                                <p class="card-text text-muted small">{{ item.description or 'No description' }}</p>
+                                <p class="card-text text-muted small">{{ item.description or 'Keine Beschreibung' }}</p>
                                 <p class="card-text">
-                                    <span class="badge bg-secondary">Shelf {{ item.shelf }}</span>
+                                    <span class="badge bg-secondary">Regal {{ item.shelf }}</span>
                                     {% if item.section %}
-                                        <span class="badge bg-outline-secondary">Section {{ item.section }}</span>
+                                        <span class="badge bg-outline-secondary">Fach {{ item.section }}</span>
                                     {% endif %}
                                 </p>
                             </div>
@@ -49,11 +49,11 @@
         </div>
     {% else %}
         <div class="text-center py-5">
-            <h3 class="text-muted">No results found</h3>
-            <p class="text-muted">Try a different search term or <a href="{{ url_for('add_item') }}">add a new item</a>.</p>
+            <h3 class="text-muted">Keine Ergebnisse gefunden</h3>
+            <p class="text-muted">Versuche einen anderen Suchbegriff oder <a href="{{ url_for('add_item') }}">füge ein neues Teil hinzu</a>.</p>
         </div>
     {% endif %}
 {% else %}
-    <p class="text-muted">Enter a search term to find parts by code or description.</p>
+    <p class="text-muted">Suchbegriff eingeben um Teile nach Nummer oder Beschreibung zu finden.</p>
 {% endif %}
 {% endblock %}

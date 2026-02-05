@@ -41,7 +41,7 @@ def add_item():
         section = request.form.get('section', type=int)
 
         if not code or not shelf:
-            flash('Code and shelf are required.', 'error')
+            flash('Teilenummer und Regal sind erforderlich.', 'error')
             return render_template('add_item.html')
 
         photo_filename = None
@@ -56,7 +56,7 @@ def add_item():
                 photo_filename = filename
 
         item_id = db.add_item(code, description, shelf, section, photo_filename)
-        flash('Item added successfully!', 'success')
+        flash('Teil erfolgreich hinzugefügt!', 'success')
         return redirect(url_for('item_detail', item_id=item_id))
 
     return render_template('add_item.html')
@@ -77,7 +77,7 @@ def item_detail(item_id):
     """View single item details."""
     item = db.get_item(item_id)
     if not item:
-        flash('Item not found.', 'error')
+        flash('Teil nicht gefunden.', 'error')
         return redirect(url_for('index'))
     return render_template('item_detail.html', item=item)
 
@@ -87,7 +87,7 @@ def edit_item(item_id):
     """Edit an item."""
     item = db.get_item(item_id)
     if not item:
-        flash('Item not found.', 'error')
+        flash('Teil nicht gefunden.', 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -97,7 +97,7 @@ def edit_item(item_id):
         section = request.form.get('section', type=int)
 
         if not code or not shelf:
-            flash('Code and shelf are required.', 'error')
+            flash('Teilenummer und Regal sind erforderlich.', 'error')
             return render_template('add_item.html', item=item, edit_mode=True)
 
         photo_filename = None
@@ -116,7 +116,7 @@ def edit_item(item_id):
                         os.remove(old_path)
 
         db.update_item(item_id, code, description, shelf, section, photo_filename)
-        flash('Item updated successfully!', 'success')
+        flash('Teil erfolgreich aktualisiert!', 'success')
         return redirect(url_for('item_detail', item_id=item_id))
 
     return render_template('add_item.html', item=item, edit_mode=True)
@@ -133,7 +133,7 @@ def delete_item(item_id):
             if os.path.exists(photo_path):
                 os.remove(photo_path)
         db.delete_item(item_id)
-        flash('Item deleted.', 'success')
+        flash('Teil gelöscht.', 'success')
     return redirect(url_for('index'))
 
 

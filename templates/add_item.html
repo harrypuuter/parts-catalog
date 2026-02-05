@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}{% if edit_mode %}Edit{% else %}Add{% endif %} Item - Parts Catalog{% endblock %}
+{% block title %}{% if edit_mode %}Bearbeiten{% else %}Hinzufügen{% endif %} - Teilekatalog{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-        <h1 class="mb-4">{% if edit_mode %}Edit Item{% else %}Add New Item{% endif %}</h1>
+        <h1 class="mb-4">{% if edit_mode %}Teil bearbeiten{% else %}Neues Teil hinzufügen{% endif %}</h1>
 
         <form method="post" enctype="multipart/form-data">
             <!-- Step 1: Photo -->
             <div class="mb-3">
                 <label for="photo" class="form-label">
-                    <span class="badge bg-primary me-2">1</span>Photo
+                    <span class="badge bg-primary me-2">1</span>Foto
                 </label>
                 {% if edit_mode and item.photo_filename %}
                     <div class="mb-2">
                         <img src="{{ url_for('uploaded_file', filename=item.photo_filename) }}"
-                             alt="Current photo" class="img-thumbnail" style="max-height: 150px;">
-                        <p class="text-muted small">Current photo - upload new to replace</p>
+                             alt="Aktuelles Foto" class="img-thumbnail" style="max-height: 150px;">
+                        <p class="text-muted small">Aktuelles Foto - neu hochladen zum Ersetzen</p>
                     </div>
                 {% endif %}
                 <input type="file" class="form-control" id="photo" name="photo"
                        accept="image/*" capture="environment">
-                <div class="form-text">Take a photo of the sticker to auto-extract text</div>
+                <div class="form-text">Foto vom Aufkleber machen um Text automatisch zu erkennen</div>
             </div>
 
             <!-- Image preview -->
@@ -33,7 +33,7 @@
             <!-- OCR Status -->
             <div id="ocr-loading" class="mb-3 text-center" style="display: none;">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="text-muted mt-2">Reading text from image...</p>
+                <p class="text-muted mt-2">Lese Text aus Bild...</p>
             </div>
 
             <!-- OCR Results -->
@@ -41,24 +41,24 @@
                 <div class="card border-success">
                     <div class="card-header bg-success text-white">
                         <span class="badge bg-light text-success me-2">2</span>
-                        Select from detected text
+                        Aus erkanntem Text auswählen
                     </div>
                     <div class="card-body">
                         <!-- Detected Codes -->
                         <div id="codes-section" class="mb-3" style="display: none;">
-                            <label class="form-label fw-bold">Part Codes</label>
+                            <label class="form-label fw-bold">Teilenummern</label>
                             <div id="codes-list" class="d-flex flex-wrap gap-2"></div>
                         </div>
 
                         <!-- Detected Descriptions -->
                         <div id="descriptions-section" style="display: none;">
-                            <label class="form-label fw-bold">Descriptions</label>
+                            <label class="form-label fw-bold">Beschreibungen</label>
                             <div id="descriptions-list" class="d-flex flex-wrap gap-2"></div>
                         </div>
 
                         <!-- No results message -->
                         <div id="no-results" class="text-muted" style="display: none;">
-                            No text detected. Please enter details manually.
+                            Kein Text erkannt. Bitte Daten manuell eingeben.
                         </div>
                     </div>
                 </div>
@@ -70,34 +70,34 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <span class="badge bg-primary me-2">3</span>
-                    Confirm Details
+                    Details bestätigen
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="code" class="form-label">Part Code *</label>
+                        <label for="code" class="form-label">Teilenummer *</label>
                         <input type="text" class="form-control form-control-lg" id="code" name="code"
                                value="{{ item.code if item else '' }}" required
-                               placeholder="e.g., P-1234">
+                               placeholder="z.B. P-1234">
                     </div>
 
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
+                        <label for="description" class="form-label">Beschreibung</label>
                         <textarea class="form-control" id="description" name="description" rows="2"
-                                  placeholder="Short description of the part">{{ item.description if item else '' }}</textarea>
+                                  placeholder="Kurze Beschreibung des Teils">{{ item.description if item else '' }}</textarea>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="shelf" class="form-label">Shelf *</label>
+                            <label for="shelf" class="form-label">Regal *</label>
                             <input type="text" class="form-control" id="shelf" name="shelf"
                                    value="{{ item.shelf if item else '' }}" required
-                                   placeholder="e.g., A, B, 1">
+                                   placeholder="z.B. A, B, 1">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="section" class="form-label">Section</label>
+                            <label for="section" class="form-label">Fach</label>
                             <input type="number" class="form-control" id="section" name="section"
                                    value="{{ item.section if item and item.section else '' }}"
-                                   placeholder="e.g., 1, 2, 3" min="1">
+                                   placeholder="z.B. 1, 2, 3" min="1">
                         </div>
                     </div>
                 </div>
@@ -105,9 +105,9 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-lg">
-                    {% if edit_mode %}Update{% else %}Add{% endif %} Item
+                    {% if edit_mode %}Aktualisieren{% else %}Hinzufügen{% endif %}
                 </button>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">Cancel</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg">Abbrechen</a>
             </div>
         </form>
     </div>
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (err) {
             ocrLoading.style.display = 'none';
-            ocrError.textContent = 'Failed to process image. Please enter details manually.';
+            ocrError.textContent = 'Bildverarbeitung fehlgeschlagen. Bitte Daten manuell eingeben.';
             ocrError.style.display = 'block';
             console.error('OCR error:', err);
         }
