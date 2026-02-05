@@ -15,6 +15,7 @@ wheels/
 
 # Database
 *.db
+*.db.backup*
 
 # Uploaded files
 uploads/
