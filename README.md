@@ -39,27 +39,100 @@ A modern Flask web application for managing parts inventory with **multi-locatio
 
 ---
 
-## Quick Start
+## Requirements
 
-### Prerequisites
-- Python 3.12 or higher
-- [uv](https://github.com/astral-sh/uv) (recommended) or pip
+- **Python 3.12 or higher**
+- **uv** (recommended) or pip
 
-### Installation
+> **Note:** SQLite is included with Python - no separate database installation required. All dependencies are managed automatically by uv.
 
+---
+
+## Installation
+
+### Step 1: Install uv (Package Manager)
+
+uv is a fast Python package manager that handles everything automatically.
+
+**macOS / Linux:**
 ```bash
-# Clone the repository
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Alternative - Install via pip:**
+```bash
+pip install uv
+```
+
+After installation, restart your terminal or run:
+- **Linux:** `source ~/.bashrc`
+- **macOS:** `source ~/.zshrc`
+- **Windows:** Close and reopen PowerShell
+
+### Step 2: Clone the Repository
+
+**macOS / Linux:**
+```bash
 git clone https://github.com/harrypuuter/parts-catalog.git
 cd parts-catalog
+```
 
-# Install dependencies with uv
+**Windows (Command Prompt or PowerShell):**
+```cmd
+git clone https://github.com/harrypuuter/parts-catalog.git
+cd parts-catalog
+```
+
+### Step 3: Install Dependencies
+
+```bash
 uv sync
+```
 
-# Run the application
+This automatically creates a virtual environment and installs all dependencies.
+
+### Step 4: Run the Application
+
+```bash
 uv run python app.py
 ```
 
-Open your browser at **http://localhost:5001**
+The application will start at: **http://localhost:5001**
+
+---
+
+## Alternative Installation (pip)
+
+If you prefer not to use uv:
+
+**macOS / Linux:**
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python app.py
+```
+
+**Windows (Command Prompt):**
+```cmd
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e .
+python app.py
+```
+
+**Windows (PowerShell):**
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e .
+python app.py
+```
 
 ---
 
@@ -143,35 +216,16 @@ app.run(debug=False, port=5002)  # Change to desired port
 
 ---
 
-## Alternative Installation (pip)
-
-If you prefer not to use uv:
-
-```bash
-# Create virtual environment
-python -m venv .venv
-
-# Activate it
-source .venv/bin/activate  # macOS/Linux
-.venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -e .
-
-# Run
-python app.py
-```
-
----
-
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | Port 5001 already in use | Change port in `app.py` |
-| OCR is slow on first run | Normal - EasyOCR downloads models once |
-| Permission denied on uploads | Run `mkdir -p uploads && chmod 755 uploads` |
-| German characters not displaying | Use a modern browser with UTF-8 support |
+| OCR is slow on first run | Normal - EasyOCR downloads language models on first use (~100MB) |
+| Permission denied on uploads | **Linux/macOS:** `mkdir -p uploads && chmod 755 uploads` |
+| German characters (ä, ö, ü) not displaying | Use a modern browser with UTF-8 support |
+| **Windows:** `Activate.ps1` cannot be loaded | Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` |
+| **Windows:** `python` not found | Use `py` instead of `python`, or add Python to PATH |
 
 ---
 
